@@ -8,7 +8,7 @@ let S, buyMode="1", activeEvent=null, eventEnd=0, nextEvent=0, nextGolden=0, dir
 function fresh(keep){
   const s={v:2,blood:0,run:0,all:0,own:{},chars:{},tree:[],souls:0,prestiges:0,clicks:0,crits:0,goldens:0,events:0,
     ach:[],chapter:0,shown:-1,daily:{last:"",streak:0},streak:0,time:0,last:Date.now(),tut:0,started:Date.now(),
-    opts:{sound:true,haptic:true,fx:true},best:0};
+    opts:{sound:true,haptic:true,fx:true},best:0,diamonds:0,noAds:false,noAdsUntil:0,permX2:false,boostEnd:0,chestLast:0,skipLast:0,bought:[]};
   PRODUCERS.forEach(p=>s.own[p.id]=0); CHARACTERS.forEach(c=>s.chars[c.id]=0);
   return keep?Object.assign(s,keep):s;
 }
@@ -38,8 +38,10 @@ function isNight(){return (S.time%(CYCLE+(has("n2")?30:0)))<nightLen()}
 function nightMult(){return isNight()?2+(has("n1")?0.5:0)+lv("kade")*0.25:1}
 function evMult(k){if(!activeEvent||!activeEvent[k])return 1;return activeEvent[k]*(1+lv("sabine")*0.12)}
 function globalMult(){
-  return (1+S.souls*0.1)*(1+lv("dorian")*0.15)*(1+S.ach.length*0.02)*(has("n5")?2:1);
+  return (1+S.souls*0.1)*(1+lv("dorian")*0.15)*(1+S.ach.length*0.02)*(has("n5")?2:1)*(S.permX2?2:1)*(boostOn()?2:1);
 }
+function boostOn(){return Date.now()<S.boostEnd}
+function adFree(){return S.noAds||Date.now()<S.noAdsUntil}
 function prodMult(id){
   const g={bat:"s1",rat:"s1",ghoul:"s2",serv:"s2",bride:"s3",crypt:"s3",bar:"s4",castle:"s4",cult:"s5",realm:"s5"}[id];
   let m=has(g)?3:1;if(managerOf(PRODUCERS.findIndex(p=>p.id===id)))m*=1.5;
@@ -153,7 +155,7 @@ function prestige(){
   modal(`<h2>⚱️ Ritual der Unsterblichkeit</h2><p class="center">Du opferst dein Imperium und erhältst <b style="color:#cfc6ff">${g} Seele(n)</b>.<br><span class="muted">Diener, Blut und Pfade werden zurückgesetzt. Clan, Erfolge und Chronik bleiben.</span></p><div class="row gap"><button class="btn" data-close="no">Abbrechen</button><button class="btn blood" data-close="yes">Ritual vollziehen</button></div>`,a=>{
     if(a!=="yes")return;
     const keep={souls:S.souls+g,prestiges:S.prestiges+1,chars:S.chars,ach:S.ach,all:S.all,clicks:S.clicks,crits:S.crits,goldens:S.goldens,events:S.events,
-      chapter:S.chapter,shown:S.shown,daily:S.daily,streak:S.streak,tut:S.tut,opts:S.opts,started:S.started,best:Math.max(S.best,S.run)};
+      chapter:S.chapter,shown:S.shown,daily:S.daily,streak:S.streak,tut:S.tut,opts:S.opts,started:S.started,diamonds:S.diamonds,noAds:S.noAds,noAdsUntil:S.noAdsUntil,permX2:S.permX2,boostEnd:S.boostEnd,chestLast:S.chestLast,skipLast:S.skipLast,bought:S.bought,best:Math.max(S.best,S.run)};
     S=fresh(keep);SFX.big();haptic("heavy");burst(innerWidth/2,innerHeight/2,120,"#b77bff",14);save();renderAll();
     toast(`👻 Wiedergeboren mit ${S.souls} Seelen (+${S.souls*10} %)`);
   });
@@ -177,7 +179,7 @@ function offline(){
   const dt=Math.min((Date.now()-(S.last||Date.now()))/1000,offlineCap());
   if(dt<60||baseBps()<=0)return false;
   const gain=baseBps()*dt*offlineRate();
-  modal(`<h2>🌙 Während du schliefst…</h2><p class="center">Dein Clan hat ${fmtT(dt)} lang gejagt.</p><p class="center" style="font-size:1.6em">🩸 <b>${fmt(gain)}</b></p><p class="center muted small">Offline-Ertrag ${Math.round(offlineRate()*100)} % · Limit ${fmtT(offlineCap())}</p><button class="btn gold" style="width:100%" data-close>Einsammeln</button>`,()=>{earn(gain);SFX.big();burst(innerWidth/2,innerHeight/2,50,"#ff2040",10)});
+  modal(`<h2>🌙 Während du schliefst…</h2><p class="center">Dein Clan hat ${fmtT(dt)} lang gejagt.</p><p class="center" style="font-size:1.6em">🩸 <b>${fmt(gain)}</b></p><p class="center muted small">Offline-Ertrag ${Math.round(offlineRate()*100)} % · Limit ${fmtT(offlineCap())}</p><div class="row gap"><button class="btn" data-close="1">Einsammeln</button><button class="btn gold" data-close="2">📺 x2 einsammeln</button></div>`,async a=>{if(a==="2"&&await MON.rewarded("offline2x",adFree())){earn(gain);toast("📺 Offline-Ertrag verdoppelt!")}earn(gain);SFX.big();burst(innerWidth/2,innerHeight/2,50,"#ff2040",10)});
   S.time+=dt;return true;
 }
 
@@ -259,7 +261,7 @@ function renderChapter(){
 function renderAll(){renderShop();renderClan();renderTree();renderMore();renderChapter();dirty=true}
 let lastHud=0;
 function hud(){
-  $("#blood").textContent=fmt(S.blood);$("#bps").textContent=fmt(bps())+" /s";$("#souls").textContent=S.souls;
+  $("#blood").textContent=fmt(S.blood);$("#bps").textContent=fmt(bps())+" /s";$("#souls").textContent=S.souls;$("#dia").textContent=fmt(S.diamonds);$("#boostTag").classList.toggle("hidden",!boostOn());
   const n=isNight(),per=CYCLE+(has("n2")?30:0),t=S.time%per,left=n?nightLen()-t:per-t;
   $("#cycle").className="cycle "+(n?"n":"d");$("#cycle").textContent=n?`🌙 Nacht x${fmt(nightMult())} · ${Math.ceil(left)}s`:`☀️ Tag · Nacht in ${Math.ceil(left)}s`;
   document.body.classList.toggle("night",n);
@@ -269,7 +271,7 @@ function hud(){
   $("#clanDot").classList.toggle("hidden",!CHARACTERS.some(c=>lv(c.id)<c.max&&S.blood>=charLvCost(c,lv(c.id))));
   $("#treeDot").classList.toggle("hidden",!TREE.some(b=>{const i=b.nodes.findIndex(n=>!has(n.id));return i>=0&&S.blood>=treeCost(b.nodes[i])}));
   $("#moreDot").classList.toggle("hidden",soulGain()<1);
-  const tab=$(".tab.active").id;if(tab==="tab-hunt")updateShop();else if(tab==="tab-clan")updateClan();else if(tab==="tab-tree")updateTree();else if(tab==="tab-more")renderMore();
+  const tab=$(".tab.active").id;if(tab==="tab-hunt")updateShop();else if(tab==="tab-clan")updateClan();else if(tab==="tab-tree")updateTree();else if(tab==="tab-more")renderMore();else if(tab==="tab-shop"&&Math.random()<0.1)renderShopTab();
   renderChapter();
 }
 
@@ -285,10 +287,52 @@ function frame(now){
   drawParts();requestAnimationFrame(frame);
 }
 
+
+/* ---------- Shop / Monetarisierung ---------- */
+const CHEST_CD=4*3600e3, SKIP_CD=15*60e3;
+function cdLeft(last,cd){return Math.max(0,last+cd-Date.now())}
+function grant(g){
+  if(g.diamonds)S.diamonds+=g.diamonds;
+  if(g.boostH)S.boostEnd=Math.max(Date.now(),S.boostEnd)+g.boostH*3600e3;
+  if(g.noAdsDays)S.noAdsUntil=Math.max(Date.now(),S.noAdsUntil)+g.noAdsDays*864e5;
+  if(g.noAds)S.noAds=true;if(g.permX2)S.permX2=true;
+  if(g.blood)earn(g.blood);
+  SFX.big();haptic("heavy");burst(innerWidth/2,innerHeight/2,70,"#7ee8ff",12);save();renderShopTab();
+}
+async function freeReward(k){
+  if(k==="boost"){if(!await MON.rewarded("boost",adFree()))return;S.boostEnd=Math.max(Date.now(),S.boostEnd)+4*3600e3;grant({});toast("⚡ 4 Std. doppelte Produktion!")}
+  if(k==="chest"){if(cdLeft(S.chestLast,CHEST_CD))return;if(!await MON.rewarded("chest",adFree()))return;S.chestLast=Date.now();const b=Math.max(500,baseBps()*900);grant({blood:b,diamonds:5});toast(`🎁 Truhe: +${fmt(b)} Blut, +5 💎`)}
+  if(k==="skip"){if(cdLeft(S.skipLast,SKIP_CD))return;if(!await MON.rewarded("skip",adFree()))return;S.skipLast=Date.now();startEvent();grant({})}
+}
+function useDia(k){
+  const c={boost:40,hour:25,event:10}[k];if(S.diamonds<c){SFX.err();toast("Nicht genug 💎");return}
+  S.diamonds-=c;
+  if(k==="boost"){S.boostEnd=Math.max(Date.now(),S.boostEnd)+4*3600e3;toast("⚡ 4 Std. x2-Boost aktiv")}
+  if(k==="hour"){const b=baseBps()*3600;earn(b);toast(`⏳ +${fmt(b)} Blut (1 Std. Ertrag)`)}
+  if(k==="event"){startEvent()}
+  grant({});
+}
+async function buyIap(id){const p=await MON.purchase(id);if(!p)return;if(p.type==="once")S.bought.push(id);grant(p.grant);toast(`✅ ${p.name} erhalten${MON.isTest()?" (TEST)":""}`)}
+function renderShopTab(){
+  const ad=adFree()?"✨ Gratis":"📺 Video";
+  const ch=cdLeft(S.chestLast,CHEST_CD),sk=cdLeft(S.skipLast,SKIP_CD);
+  $("#freeRewards").innerHTML=`
+   <div class="item"><div class="ic">⚡</div><div class="info"><b>Blutrausch-Boost</b><small>4 Std. x2 Produktion (stapelbar)${boostOn()?` · aktiv noch ${fmtT((S.boostEnd-Date.now())/1000)}`:""}</small></div><button class="btn gold" data-fr="boost">${ad}</button></div>
+   <div class="item"><div class="ic">🎁</div><div class="info"><b>Gratis-Truhe</b><small>15 Min. Ertrag + 5 💎 · alle 4 Std.</small></div><button class="btn gold" data-fr="chest" ${ch?"disabled":""}>${ch?fmtT(ch/1000):ad}</button></div>
+   <div class="item"><div class="ic">⏩</div><div class="info"><b>Ereignis sofort</b><small>Nicht warten – nächstes Ereignis jetzt starten</small></div><button class="btn gold" data-fr="skip" ${sk?"disabled":""}>${sk?fmtT(sk/1000):ad}</button></div>`;
+  $("#diaUse").innerHTML=[["boost","⚡","4 Std. x2-Boost",40],["hour","⏳","1 Std. Ertrag sofort",25],["event","🌕","Ereignis starten",10]].map(([k,i,n,c])=>`<div class="item"><div class="ic">${i}</div><div class="info"><b>${n}</b></div><button class="btn" data-du="${k}" ${S.diamonds<c?"disabled":""}>${c} 💎</button></div>`).join("");
+  $("#iap").innerHTML=MON.PRODUCTS.map(p=>{const own=p.type==="once"&&(S.bought.includes(p.id)||(p.id==="vt_noads"&&S.noAds)||(p.id==="vt_permx2"&&S.permX2));
+    return`<div class="item iapi ${p.id==="vt_starter"?"best":""}"><div class="ic">${{vt_starter:"🎒",vt_noads:"🚫",vt_permx2:"♾️"}[p.id]||"💎"}</div><div class="info"><b>${p.name}</b><small>${p.desc}</small></div><button class="btn ${own?"":"blood"}" data-iap="${p.id}" ${own?"disabled":""}>${own?"✔ Gekauft":p.price}</button></div>`}).join("");
+  $$("[data-fr]").forEach(b=>b.onclick=()=>freeReward(b.dataset.fr));
+  $$("[data-du]").forEach(b=>b.onclick=()=>useDia(b.dataset.du));
+  $$("[data-iap]").forEach(b=>b.onclick=()=>buyIap(b.dataset.iap));
+}
+$("#restoreBtn").onclick=async()=>{const r=await MON.restore();toast(r?"✅ Käufe wiederhergestellt":"ℹ️ Im Browser-Testmodus gibt es nichts wiederherzustellen")};
+
 /* ---------- Wiring ---------- */
 $("#bite").addEventListener("pointerdown",e=>{e.preventDefault();bite(e)});
 $$("#nav button").forEach(b=>b.onclick=()=>{$$("#nav button").forEach(x=>x.classList.toggle("on",x===b));$$(".tab").forEach(t=>t.classList.toggle("active",t.id==="tab-"+b.dataset.tab));
-  ({hunt:renderShop,clan:renderClan,tree:renderTree,more:renderMore})[b.dataset.tab]?.();tone(330,0.04,"triangle",0.05);haptic()});
+  ({shop:renderShopTab,hunt:renderShop,clan:renderClan,tree:renderTree,more:renderMore})[b.dataset.tab]?.();tone(330,0.04,"triangle",0.05);haptic()});
 $$(".seg button").forEach(b=>b.onclick=()=>{buyMode=b.dataset.buy;$$(".seg button").forEach(x=>x.classList.toggle("on",x===b));updateShop()});
 $("#dailyBtn").onclick=openDaily;$("#storyBtn").onclick=openChronicle;$("#prestige").onclick=prestige;
 $("#tutNext").onclick=()=>{S.tut++;tutorial()};
@@ -309,5 +353,6 @@ renderAll();
 if(!hadOffline&&dailyAvailable()&&S.clicks>0)setTimeout(()=>{if($("#modal").classList.contains("hidden"))openDaily()},800);
 requestAnimationFrame(frame);
 if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});
-window.VT={get S(){return S},save,load,bps,soulGain,earn:n=>earn(n),renderAll}; // Debug/Test-Hook
+MON.init();
+window.VT={get S(){return S},renderShopTab,save,load,bps,soulGain,earn:n=>earn(n),renderAll}; // Debug/Test-Hook
 })();

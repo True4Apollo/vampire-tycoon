@@ -17,9 +17,9 @@
 <canvas id="fx"></canvas>
 <div id="app">
   <header id="top">
-    <div class="res"><span class="drop">🩸</span><div><b id="blood">0</b><small id="bps">0 /s</small></div></div>
+    <div class="res"><span class="drop">🩸</span><em id="boostTag" class="boosttag hidden">x2</em><div><b id="blood">0</b><small id="bps">0 /s</small></div></div>
     <div id="cycle" class="cycle"></div>
-    <div class="res souls"><span>👻</span><b id="souls">0</b></div>
+    <div class="res souls"><span>👻</span><b id="souls">0</b><span>💎</span><b id="dia">0</b></div>
   </header>
   <div id="eventbar" class="hidden"></div>
   <main>
@@ -40,6 +40,14 @@
     </section>
     <section id="tab-clan" class="tab"><h2>Der Clan von Nebelhain</h2><div id="clan"></div></section>
     <section id="tab-tree" class="tab"><h2>Blutpfade</h2><p class="muted">Schalte Knoten frei – jeder Pfad verzweigt sich tiefer in die Finsternis.</p><div id="tree"></div></section>
+    <section id="tab-shop" class="tab">
+      <div class="testbanner">🧪 TEST-MODUS – Käufe und Werbung sind simuliert, es wird nichts berechnet.</div>
+      <h2>📺 Gratis-Belohnungen</h2><div id="freeRewards"></div>
+      <h2>💎 Diamanten einsetzen</h2><div id="diaUse"></div>
+      <h2>🛒 Angebote</h2><div id="iap"></div>
+      <div class="row gap"><button class="btn" id="restoreBtn">Käufe wiederherstellen</button></div>
+      <p class="muted small center">Alle Inhalte sind auch ohne Kauf erspielbar. Keine Lootboxen, keine Zufallskäufe.</p>
+    </section>
     <section id="tab-more" class="tab">
       <div class="card"><h2>⚱️ Unsterblichkeit</h2><p class="muted">Opfere dein Imperium, um als Unsterblicher wiederzukehren. Jede Seele: <b>+10 %</b> Produktion für immer. Clan, Erfolge und Chronik bleiben erhalten.</p><p id="soulinfo"></p><button class="btn blood" id="prestige">Ritual beginnen</button></div>
       <div class="card"><h2>🏆 Erfolge <small id="achCount"></small></h2><div id="ach" class="achgrid"></div></div>
@@ -57,6 +65,7 @@
     <button data-tab="hunt" class="on"><i>🏰</i>Anwesen</button>
     <button data-tab="clan"><i>🧛</i>Clan<em id="clanDot" class="dot hidden"></em></button>
     <button data-tab="tree"><i>🌿</i>Pfade<em id="treeDot" class="dot hidden"></em></button>
+    <button data-tab="shop"><i>💎</i>Shop</button>
     <button data-tab="more"><i>⚱️</i>Mehr<em id="moreDot" class="dot hidden"></em></button>
   </nav>
 </div>
@@ -66,6 +75,7 @@
 <button id="golden" class="hidden" aria-label="Seltene Beute">🦇</button>
 <script src="js/art.js"></script>
 <script src="js/data.js"></script>
+<script src="js/monetize.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>
