@@ -214,27 +214,124 @@ $("#golden").onclick=e=>{const g=$("#golden");g.classList.add("hidden");S.golden
   burst(e.clientX,e.clientY,50,"#ffd24a",10);SFX.crit();haptic("heavy")};
 
 /* ---------- Rendering ---------- */
-function workers(n){return n<=0?0:Math.min(4,1+Math.floor(Math.log2(n)/2))}
+function workers(n){return n<=0?0:Math.min(5,1+Math.floor(Math.log2(n)/1.5))}
 function managerOf(i){const c=CHARACTERS[Math.floor(i/2)];return c&&lv(c.id)>0?c:null}
-function renderShop(){
-  const vis=i=>i===0||S.own[PRODUCERS[i-1].id]>0||S.own[PRODUCERS[i].id]>0||S.run>=PRODUCERS[i].cost*0.5;
-  $("#mansion").innerHTML=PRODUCERS.map((p,i)=>{const o=S.own[p.id],[col,hat]=ART.STCOL[p.id];
-    if(!vis(i))return`<div class="floor locked" style="--fb:${ART.BG[i]}"><div class="boards">🚧 ??? – noch im Nebel verborgen 🚧</div></div>`;
-    const m=managerOf(i),nw=workers(o);
-    const ws=Array.from({length:nw},(_,k)=>`<div class="wk" style="--d:${5+k*1.3}s;--dl:-${k*1.7}s;animation-duration:${5+k*1.3}s;animation-delay:-${k*1.7}s"><div class="wkin" style="animation-duration:${5+k*1.3}s;animation-delay:-${k*1.7}s">${ART.worker(col,hat)}</div></div>`).join("");
-    return`<div class="floor ${o?"":"empty"}" id="pi${i}" style="--fb:${ART.BG[i]}">
-      <div class="flabel"><span class="lv">${o}</span>${p.name}</div>
-      <div class="station">${ART.ST[p.id]}</div>
-      ${m?`<div class="mgr" title="Manager: ${m.name}"><img src="${PORTRAIT(m.id)}" alt=""><span>Manager</span></div>`:`<div class="mgr none" data-goclan>👤<span>Manager?</span></div>`}
-      <div class="walk">${ws||(o?"":`<div class="hint">Kaufe den ersten ${p.name}!</div>`)}</div>
-      <div class="drop">${o?"🍾".repeat(Math.min(3,1+Math.floor(o/25))):""}</div>
-      <div class="fctrl"><small>+${fmt(p.bps*o*prodMult(p.id)*globalMult())}/s · ⭐${25-(o%25)}</small><button class="btn buy" data-p="${i}"></button></div>
-    </div>`}).join("");
-  $$("#mansion [data-p]").forEach(b=>b.onclick=()=>buyProducer(+b.dataset.p));
-  $$("#mansion [data-goclan]").forEach(b=>b.onclick=()=>$("#nav [data-tab=clan]").click());
-  updateShop();
+/* ---------- Top-Down-Karte von Nebelhain (Canvas) ---------- */
+const W=1000,H=1400,CASTLE={x:500,y:700};
+const PLOTS=[[330,560],[670,560],[260,800],[740,800],[400,980],[600,980],[240,330],[760,330],[230,1150],[770,1150]].map(([x,y],i)=>({x,y,i}));
+const mc=$("#map"),mx=mc.getContext("2d");let cam={x:CASTLE.x,y:CASTLE.y-60},vel={x:0,y:0},drag=null,openPlot=-1,mapT=0;
+const rnd=(s=>()=>(s=(s*16807)%2147483647)/2147483647)(42);
+const DECO=[];for(let k=0;k<140;k++){const x=rnd()*W,y=rnd()*H;if(Math.hypot(x-CASTLE.x,y-CASTLE.y)<150||PLOTS.some(p=>Math.hypot(p.x-x,p.y-y)<95))continue;const r=rnd();DECO.push({x,y,t:r<.55?"tree":r<.8?"grave":r<.92?"bush":"lamp",s:.8+rnd()*.5})}
+const FOUNT={x:500,y:450};
+const portraitImg={};CHARACTERS.forEach(c=>{const im=new Image();im.src=PORTRAIT(c.id);portraitImg[c.id]=im});
+const ROOF=["#7a4fd1","#a0522d","#4f8a4f","#c2410c","#e85d8a","#6b3f2a","#c026d3","#c43a5a","#b8002e","#3b2a7a"];
+const walkers=[];
+function syncWalkers(){
+  PLOTS.forEach(p=>{const want=workers(S.own[PRODUCERS[p.i].id]);const have=walkers.filter(w=>w.p===p.i);
+    for(let k=have.length;k<want;k++)walkers.push({p:p.i,t:rnd(),sp:.08+rnd()*.05,col:ART.STCOL[PRODUCERS[p.i].id][0]});
+    if(have.length>want)have.slice(want).forEach(w=>walkers.splice(walkers.indexOf(w),1))});
 }
-function updateShop(){$$("#mansion [data-p]").forEach(b=>{const p=PRODUCERS[+b.dataset.p],{k,t}=bulk(p);b.innerHTML=`${S.own[p.id]?"⬆️":"🔓"} ${buyMode==="1"?"":"x"+k+" "}${fmt(t)}`;b.disabled=S.blood<t;b.closest(".floor").classList.toggle("can",S.blood>=t)});const c=$("#cellarAmt");if(c)c.textContent=fmt(S.blood)+" 🩸"}
+for(let k=0;k<6;k++)walkers.push({p:-1,t:rnd(),sp:.03+rnd()*.02,col:["#6aa0ff","#ffb36b","#7be08a"][k%3],a:rnd()*7});
+function visible(i){return i===0||S.own[PRODUCERS[i-1].id]>0||S.own[PRODUCERS[i].id]>0||S.run>=PRODUCERS[i].cost*0.5}
+function resizeMap(){const r=mc.getBoundingClientRect();mc.width=r.width*devicePixelRatio;mc.height=r.height*devicePixelRatio}
+addEventListener("resize",resizeMap);
+function clampCam(){const vw=mc.clientWidth,vh=mc.clientHeight;cam.x=Math.max(vw/2,Math.min(W-vw/2,cam.x));cam.y=Math.max(vh/2-40,Math.min(H-vh/2+120,cam.y))}
+function toWorld(cx,cy){const r=mc.getBoundingClientRect();return{x:cx-r.left-mc.clientWidth/2+cam.x,y:cy-r.top-mc.clientHeight/2+cam.y}}
+mc.addEventListener("pointerdown",e=>{drag={x:e.clientX,y:e.clientY,cx:cam.x,cy:cam.y,moved:0,lx:e.clientX,ly:e.clientY,lt:performance.now()};vel={x:0,y:0};mc.setPointerCapture(e.pointerId)});
+mc.addEventListener("pointermove",e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.moved=Math.max(drag.moved,Math.hypot(dx,dy));cam.x=drag.cx-dx;cam.y=drag.cy-dy;clampCam();
+  const now=performance.now(),dt=Math.max(1,now-drag.lt);vel={x:-(e.clientX-drag.lx)/dt*16,y:-(e.clientY-drag.ly)/dt*16};drag.lx=e.clientX;drag.ly=e.clientY;drag.lt=now});
+mc.addEventListener("pointerup",e=>{if(drag&&drag.moved<8){vel={x:0,y:0};tapMap(e.clientX,e.clientY)}drag=null});
+mc.addEventListener("pointercancel",()=>drag=null);
+function tapMap(cx,cy){const w=toWorld(cx,cy);
+  if(Math.hypot(w.x-CASTLE.x,w.y-CASTLE.y)<80){bite({clientX:cx,clientY:cy});return}
+  const p=PLOTS.find(p=>Math.abs(w.x-p.x)<70&&Math.abs(w.y-p.y)<65);if(p&&visible(p.i))showPlot(p.i)}
+function showPlot(i){openPlot=i;tone(500,0.05,"triangle",0.06);haptic();renderShop();$("#plotPanel").classList.remove("hidden")}
+function hidePlot(){openPlot=-1;$("#plotPanel").classList.add("hidden")}
+function renderShop(){syncWalkers();if(openPlot<0)return;const i=openPlot,p=PRODUCERS[i],o=S.own[p.id],m=managerOf(i),mc2=CHARACTERS[Math.floor(i/2)];
+  $("#plotPanel").innerHTML=`<div class="pp"><button class="ppx" id="ppClose">✕</button>
+   <div class="pphead"><div class="ppic">${p.ic}</div><div><b>${p.name}</b><small>${p.desc}</small><div class="pplv">Stufe ${o} · ⭐ x2 in ${25-(o%25)}</div></div></div>
+   <div class="ppstats"><span>Produktion<b>${fmt(p.bps*o*prodMult(p.id)*globalMult())}/s</b></span><span>Pro Stück<b>${fmt(p.bps*prodMult(p.id)*globalMult())}/s</b></span><span>Arbeiter<b>${workers(o)}</b></span></div>
+   <div class="ppmgr">${m?`<img src="${PORTRAIT(m.id)}"><div><b>Manager: ${m.name}</b><small>+50 % Produktion</small></div>`:`<div class="mgrslot">👤</div><div><b>Manager-Platz frei</b><small>${mc2?`Schalte ${mc2.name.split(" ")[0]} im Clan frei (+50 %)`:""}</small></div><button class="btn" data-goclan>Clan</button>`}</div>
+   <div class="seg">${["1","10","max"].map(b=>`<button data-buy="${b}" class="${buyMode===b?"on":""}">${b==="max"?"Max":"x"+b}</button>`).join("")}</div>
+   <button class="btn buy big" data-p="${i}"></button></div>`;
+  $("#ppClose").onclick=hidePlot;$$("#plotPanel [data-buy]").forEach(b=>b.onclick=()=>{buyMode=b.dataset.buy;renderShop()});
+  $$("#plotPanel [data-goclan]").forEach(b=>b.onclick=()=>{hidePlot();$("#nav [data-tab=clan]").click()});
+  $("#plotPanel [data-p]").onclick=()=>buyProducer(i);updateShop()}
+function updateShop(){const b=$("#plotPanel [data-p]");if(!b)return;const p=PRODUCERS[+b.dataset.p],{k,t}=bulk(p);b.innerHTML=`${S.own[p.id]?"⬆️ Ausbauen":"🔨 Bauen"} ${buyMode==="1"?"":"x"+k} · ${fmt(t)} 🩸`;b.disabled=S.blood<t}
+function rr(x,y,w,h,r){mx.beginPath();mx.roundRect(x,y,w,h,r)}
+function chibi(x,y,col,bottle,dir,ph){const b=Math.abs(Math.sin(ph))*3;
+  mx.fillStyle="#0003";mx.beginPath();mx.ellipse(x,y+9,8,3,0,0,7);mx.fill();
+  mx.fillStyle="#1a0f2e";mx.fillRect(x-5,y+2+Math.sin(ph)*2,3,6);mx.fillRect(x+2,y+2-Math.sin(ph)*2,3,6);
+  mx.fillStyle=col;mx.strokeStyle="#1a0f2e";mx.lineWidth=2;rr(x-7,y-8-b,14,12,5);mx.fill();mx.stroke();
+  mx.fillStyle="#f1ecff";mx.beginPath();mx.arc(x,y-16-b,8,0,7);mx.fill();mx.stroke();
+  mx.fillStyle="#2b2140";mx.beginPath();mx.arc(x,y-18-b,8,Math.PI,0);mx.fill();
+  mx.fillStyle="#ff3355";mx.fillRect(x-4+dir,y-16-b,2,2);mx.fillRect(x+2+dir,y-16-b,2,2);
+  if(bottle){mx.fillStyle="#ff2f5b";rr(x+6*Math.sign(dir||1),y-10-b,6,9,2);mx.fill();mx.stroke()}}
+function drawTree(x,y,s){mx.fillStyle="#0004";mx.beginPath();mx.ellipse(x+4,y+16*s,22*s,8*s,0,0,7);mx.fill();mx.fillStyle="#4a2e20";mx.fillRect(x-3*s,y,6*s,16*s);
+  [["#1f5a3a",0,-6,20],["#2e7a4a",-8,-12,14],["#3f9a5a",6,-16,12]].forEach(([c,dx,dy,r])=>{mx.fillStyle=c;mx.beginPath();mx.arc(x+dx*s,y+dy*s,r*s,0,7);mx.fill()});mx.strokeStyle="#1a0f2e";mx.lineWidth=2;mx.beginPath();mx.arc(x,y-6*s,20*s,0,7);mx.stroke()}
+function drawGrave(x,y,s){mx.fillStyle="#0003";mx.fillRect(x-9*s,y+8*s,22*s,5*s);mx.fillStyle="#9aa3b5";mx.strokeStyle="#1a0f2e";mx.lineWidth=2;rr(x-9*s,y-14*s,18*s,22*s,[9*s,9*s,2,2]);mx.fill();mx.stroke();mx.strokeStyle="#5c6475";mx.beginPath();mx.moveTo(x,y-9*s);mx.lineTo(x,y+1*s);mx.moveTo(x-4*s,y-5*s);mx.lineTo(x+4*s,y-5*s);mx.stroke()}
+function drawBuilding(p){const pr=PRODUCERS[p.i],o=S.own[pr.id],x=p.x,y=p.y;
+  if(!visible(p.i)){mx.fillStyle="#2a2440aa";mx.beginPath();mx.ellipse(x,y,70,50,0,0,7);mx.fill();mx.fillStyle="#fff8";mx.font="bold 30px sans-serif";mx.textAlign="center";mx.fillText("❔",x,y+10);return}
+  if(o===0){ // Baustelle
+    mx.fillStyle="#8a6a4a";rr(x-62,y-44,124,92,12);mx.fill();mx.strokeStyle="#1a0f2e";mx.lineWidth=3;mx.stroke();
+    mx.save();mx.beginPath();mx.rect(x-62,y+34,124,14);mx.clip();for(let k=-70;k<70;k+=16){mx.fillStyle="#ffd166";mx.beginPath();mx.moveTo(x+k,y+48);mx.lineTo(x+k+8,y+48);mx.lineTo(x+k+16,y+34);mx.lineTo(x+k+8,y+34);mx.fill()}mx.restore();
+    mx.font="34px sans-serif";mx.textAlign="center";mx.fillText(pr.ic,x-24,y+6);mx.globalAlpha=.6;mx.fillText("🚧",x+28,y+4);mx.globalAlpha=1;
+    const {t}=bulk(pr),can=S.blood>=cost(pr,0);mx.fillStyle="#4a2e20";mx.fillRect(x-3,y-70,6,30);mx.fillStyle=can?"#5be37d":"#fff3c4";mx.strokeStyle="#1a0f2e";mx.lineWidth=3;rr(x-52,y-96,104,32,8);mx.fill();mx.stroke();
+    mx.fillStyle="#1a0f2e";mx.font="bold 15px sans-serif";mx.fillText(fmt(cost(pr,0))+" 🩸",x,y-74);return}
+  // Gebäude (3/4 Ansicht)
+  mx.fillStyle="#0004";mx.beginPath();mx.ellipse(x+8,y+46,66,16,0,0,7);mx.fill();
+  mx.fillStyle="#cbb48a";rr(x-64,y+20,128,30,10);mx.fill();
+  mx.fillStyle="#e9dcc0";mx.strokeStyle="#1a0f2e";mx.lineWidth=3;rr(x-52,y-14,104,50,6);mx.fill();mx.stroke();
+  mx.fillStyle="#2b1f44";rr(x-10,y+10,20,26,[10,10,0,0]);mx.fill();
+  const lit=isNight()?"#ffd166":"#8fd3ff";mx.fillStyle=lit;rr(x-40,y,18,16,4);mx.fill();rr(x+22,y,18,16,4);mx.fill();
+  mx.fillStyle=ROOF[p.i];mx.beginPath();mx.moveTo(x-62,y-10);mx.lineTo(x-40,y-56);mx.lineTo(x+40,y-56);mx.lineTo(x+62,y-10);mx.closePath();mx.fill();mx.stroke();
+  mx.fillStyle="#fff3";mx.fillRect(x-36,y-50,72,6);
+  mx.font="30px sans-serif";mx.textAlign="center";mx.fillText(pr.ic,x,y-22);
+  const can=S.blood>=bulk(pr).t;mx.fillStyle="#ffd166";mx.strokeStyle="#1a0f2e";mx.lineWidth=3;mx.beginPath();mx.arc(x+56,y-48,16,0,7);mx.fill();mx.stroke();
+  mx.fillStyle="#3a1f00";mx.font="bold 13px sans-serif";mx.fillText(o,x+56,y-44);
+  if(can){const b=Math.sin(mapT*6)*3;mx.fillStyle="#5be37d";mx.beginPath();mx.arc(x-56,y-50+b,13,0,7);mx.fill();mx.stroke();mx.fillStyle="#fff";mx.font="bold 15px sans-serif";mx.fillText("⬆",x-56,y-45+b)}
+  mx.fillStyle="#1a0f2ecc";rr(x-60,y+52,120,20,8);mx.fill();mx.fillStyle="#fff";mx.font="bold 12px sans-serif";mx.fillText(pr.name.length>16?pr.name.slice(0,15)+"…":pr.name,x,y+66);
+  const m=managerOf(p.i);if(m&&portraitImg[m.id].complete){const b=Math.sin(mapT*3+p.i)*2;mx.drawImage(portraitImg[m.id],x+50,y-4+b,36,44)}}
+function drawCastle(){const x=CASTLE.x,y=CASTLE.y,pulse=1+Math.sin(mapT*4)*.02;
+  mx.fillStyle="#0005";mx.beginPath();mx.ellipse(x+10,y+70,110,26,0,0,7);mx.fill();
+  mx.fillStyle="#6e6a8e";mx.strokeStyle="#1a0f2e";mx.lineWidth=4;rr(x-90,y-30,180,96,10);mx.fill();mx.stroke();
+  [[-90,-70],[60,-70]].forEach(([dx,dy])=>{mx.fillStyle="#7e7aa0";rr(x+dx,y+dy,30,130,6);mx.fill();mx.stroke();mx.fillStyle="#c43a5a";mx.beginPath();mx.moveTo(x+dx-6,y+dy);mx.lineTo(x+dx+15,y+dy-40);mx.lineTo(x+dx+36,y+dy);mx.closePath();mx.fill();mx.stroke()});
+  mx.fillStyle="#8a86b0";rr(x-40,y-80,80,60,6);mx.fill();mx.stroke();mx.fillStyle="#c43a5a";mx.beginPath();mx.moveTo(x-48,y-80);mx.lineTo(x,y-130);mx.lineTo(x+48,y-80);mx.closePath();mx.fill();mx.stroke();
+  mx.fillStyle=isNight()?"#ffd166":"#8fd3ff";[[-24,-62],[12,-62]].forEach(([dx,dy])=>{rr(x+dx,y+dy,12,18,6);mx.fill()});
+  mx.fillStyle="#2b1f44";rr(x-22,y+20,44,46,[22,22,0,0]);mx.fill();
+  mx.save();mx.translate(x,y+4);mx.scale(pulse,pulse);mx.font="38px sans-serif";mx.textAlign="center";mx.fillText("🩸",0,10);mx.restore();
+  mx.fillStyle="#1a0f2ecc";rr(x-70,y+76,140,24,10);mx.fill();mx.fillStyle="#ffd166";mx.font="bold 14px sans-serif";mx.textAlign="center";mx.fillText("Blutkeller · "+fmt(S.blood),x,y+93)}
+function drawMap(dt){
+  if(!$("#tab-hunt").classList.contains("active"))return;
+  if(mc.width!==Math.round(mc.clientWidth*devicePixelRatio))resizeMap();
+  mapT+=dt;if(!drag&&(Math.abs(vel.x)>.1||Math.abs(vel.y)>.1)){cam.x+=vel.x;cam.y+=vel.y;vel.x*=.92;vel.y*=.92;clampCam()}
+  const d=devicePixelRatio,vw=mc.clientWidth,vh=mc.clientHeight;mx.setTransform(d,0,0,d,0,0);mx.clearRect(0,0,vw,vh);
+  mx.save();mx.translate(Math.round(vw/2-cam.x),Math.round(vh/2-cam.y));
+  // Boden
+  mx.fillStyle="#3f8a4a";mx.fillRect(-400,-400,W+800,H+800);
+  for(let k=0;k<60;k++){const gx=(k*173)%W,gy=(k*311)%H;mx.fillStyle=k%2?"#4a9a55":"#367a40";mx.beginPath();mx.ellipse(gx,gy,60,30,0,0,7);mx.fill()}
+  // Wege
+  mx.lineCap="round";mx.lineJoin="round";
+  [["#5a3f26",50],["#d9b98a",40]].forEach(([c,w])=>{mx.strokeStyle=c;mx.lineWidth=w;PLOTS.forEach(p=>{mx.beginPath();mx.moveTo(CASTLE.x,CASTLE.y);mx.lineTo(p.x,p.y+30);mx.stroke()});mx.beginPath();mx.moveTo(CASTLE.x,CASTLE.y);mx.lineTo(FOUNT.x,FOUNT.y);mx.lineTo(FOUNT.x,0);mx.stroke()});
+  mx.fillStyle="#d9b98a";mx.beginPath();mx.arc(CASTLE.x,CASTLE.y+20,140,0,7);mx.fill();mx.strokeStyle="#5a3f26";mx.lineWidth=5;mx.stroke();
+  // Brunnen
+  mx.fillStyle="#9aa3b5";mx.strokeStyle="#1a0f2e";mx.lineWidth=3;mx.beginPath();mx.arc(FOUNT.x,FOUNT.y,42,0,7);mx.fill();mx.stroke();mx.fillStyle="#c4001a";mx.beginPath();mx.arc(FOUNT.x,FOUNT.y,32,0,7);mx.fill();
+  for(let k=0;k<3;k++){mx.fillStyle="#ff5c7a";mx.globalAlpha=.6;mx.beginPath();mx.arc(FOUNT.x,FOUNT.y,8+((mapT*12+k*10)%26),0,7);mx.strokeStyle="#ff9aae";mx.lineWidth=2;mx.stroke()}mx.globalAlpha=1;
+  mx.fillStyle="#9aa3b5";mx.beginPath();mx.arc(FOUNT.x,FOUNT.y,9,0,7);mx.fill();mx.stroke();
+  // Objekte nach y sortiert
+  const objs=[...DECO.map(o=>({y:o.y,f:()=>o.t==="tree"?drawTree(o.x,o.y,o.s):o.t==="grave"?drawGrave(o.x,o.y,o.s):o.t==="bush"?(mx.fillStyle="#2e6a3a",mx.beginPath(),mx.arc(o.x,o.y,12*o.s,0,7),mx.arc(o.x+12*o.s,o.y+2,10*o.s,0,7),mx.fill()):(mx.fillStyle="#2b2140",mx.fillRect(o.x-2,o.y-30,4,30),mx.fillStyle=isNight()?"#ffd166":"#fff8",mx.beginPath(),mx.arc(o.x,o.y-32,6,0,7),mx.fill())})),
+    ...PLOTS.map(p=>({y:p.y,f:()=>drawBuilding(p)})),{y:CASTLE.y,f:drawCastle}];
+  walkers.forEach(w=>{w.t+=w.sp*dt;let x,y,bottle=false,dir=1;
+    if(w.p<0){const a=w.a+mapT*w.sp*2;x=CASTLE.x+Math.cos(a)*125;y=CASTLE.y+20+Math.sin(a)*125;dir=Math.cos(a+1.6)>0?1:-1}
+    else{const p=PLOTS[w.p],ph=w.t%1,go=ph<.5,k=go?ph*2:2-ph*2;x=p.x+(CASTLE.x-p.x)*k;y=p.y+30+(CASTLE.y-p.y-30)*k;bottle=go;dir=Math.sign((CASTLE.x-p.x)*(go?1:-1))||1}
+    objs.push({y,f:()=>chibi(x,y,w.col,bottle,dir,mapT*10+w.t*30)})});
+  objs.sort((a,b)=>a.y-b.y).forEach(o=>o.f());
+  mx.restore();
+  // Tag/Nacht-Tönung + Nebel
+  if(isNight()){mx.fillStyle="rgba(30,20,90,.38)";mx.fillRect(0,0,vw,vh)}else{mx.fillStyle="rgba(255,170,120,.08)";mx.fillRect(0,0,vw,vh)}
+  const fg=mx.createLinearGradient(0,0,0,vh);fg.addColorStop(0,"rgba(220,210,255,.18)");fg.addColorStop(.25,"rgba(0,0,0,0)");mx.fillStyle=fg;mx.fillRect(0,0,vw,vh);
+}
+$("#homeBtn").onclick=()=>{cam={x:CASTLE.x,y:CASTLE.y-60};clampCam()};
 function renderClan(){
   $("#clan").innerHTML=CHARACTERS.map(c=>{const l=lv(c.id),price=charLvCost(c,l);
     return`<div class="char ${l?"":"locked"}"><img src="${PORTRAIT(c.id)}" alt="${c.name}"><div style="flex:1"><b>${l?c.name:"??? – "+c.name.split(" ")[0]}</b><div class="role">${c.role}</div><p class="muted">${c.story}</p><div class="abil">✦ <b>${c.ability}</b>: ${c.eff}</div><div class="abil">🏷️ Manager: ${PRODUCERS.slice(CHARACTERS.indexOf(c)*2,CHARACTERS.indexOf(c)*2+2).map(p=>p.name).join(" & ")} (+50 %)</div>
@@ -284,7 +381,7 @@ function frame(now){
   if(Date.now()>nextEvent){if(nextEvent)startEvent();nextEvent=Date.now()+(90+Math.random()*90)*1000/(1+lv("sabine")*0.12)}
   if(Date.now()>nextGolden){if(nextGolden)spawnGolden();nextGolden=Date.now()+(45+Math.random()*60)*1000}
   acc+=dt;if(acc>0.1){acc=0;hud();checkAch();checkStory();tutorial()}
-  drawParts();requestAnimationFrame(frame);
+  drawParts();drawMap(dt);requestAnimationFrame(frame);
 }
 
 
@@ -330,10 +427,10 @@ function renderShopTab(){
 $("#restoreBtn").onclick=async()=>{const r=await MON.restore();toast(r?"✅ Käufe wiederhergestellt":"ℹ️ Im Browser-Testmodus gibt es nichts wiederherzustellen")};
 
 /* ---------- Wiring ---------- */
-$("#bite").addEventListener("pointerdown",e=>{e.preventDefault();bite(e)});
+$("#bite").addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();bite(e)});
 $$("#nav button").forEach(b=>b.onclick=()=>{$$("#nav button").forEach(x=>x.classList.toggle("on",x===b));$$(".tab").forEach(t=>t.classList.toggle("active",t.id==="tab-"+b.dataset.tab));
   ({shop:renderShopTab,hunt:renderShop,clan:renderClan,tree:renderTree,more:renderMore})[b.dataset.tab]?.();tone(330,0.04,"triangle",0.05);haptic()});
-$$(".seg button").forEach(b=>b.onclick=()=>{buyMode=b.dataset.buy;$$(".seg button").forEach(x=>x.classList.toggle("on",x===b));updateShop()});
+
 $("#dailyBtn").onclick=openDaily;$("#storyBtn").onclick=openChronicle;$("#prestige").onclick=prestige;
 $("#tutNext").onclick=()=>{S.tut++;tutorial()};
 $("#saveBtn").onclick=()=>{save();toast("💾 Gespeichert")};
@@ -354,5 +451,5 @@ if(!hadOffline&&dailyAvailable()&&S.clicks>0)setTimeout(()=>{if($("#modal").clas
 requestAnimationFrame(frame);
 if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});
 MON.init();
-window.VT={get S(){return S},renderShopTab,save,load,bps,soulGain,earn:n=>earn(n),renderAll}; // Debug/Test-Hook
+window.VT={get S(){return S},showPlot,hidePlot,get cam(){return cam},PLOTS,renderShopTab,save,load,bps,soulGain,earn:n=>earn(n),renderAll}; // Debug/Test-Hook
 })();

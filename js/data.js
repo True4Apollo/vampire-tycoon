@@ -127,7 +127,7 @@ const DAILY = [ {m:5,t:"5 Min. Ertrag"},{m:10,t:"10 Min."},{m:20,t:"20 Min."},{m
 
 const TUTORIAL = [
   {t:"Willkommen in Nebelhain, junger Vampir. Tippe auf den Bluttropfen, um zu beißen und Blut zu sammeln!", el:"#bite", until:s=>s.clicks>=10},
-  {t:"Sehr gut! Scrolle nach unten zum Fledermausturm und kaufe eine Fledermaus – sie sammelt Blut für dich, auch wenn du nicht tippst.", el:"#mansion [data-p='0']", until:s=>s.own.bat>=1},
+  {t:"Sehr gut! Tippe auf der Karte auf die Baustelle 🦇 Fledermaus und baue sie – sie sammelt Blut für dich, auch wenn du nicht tippst. Ziehe die Karte, um Nebelhain zu erkunden!", el:"#map", until:s=>s.own.bat>=1},
   {t:"Dein Imperium wächst! Nachts (🌙) verdoppelt sich die Produktion. Schalte unter 🧛 Clan deinen ersten Verbündeten frei, sobald du 500 Blut hast.", el:"#nav [data-tab=clan]", until:s=>s.chars.dorian>0},
   {t:"Unter 🌿 Pfade findest du mächtige Verbesserungen. Und hol dir täglich deine 🎁 Belohnung! Viel Spaß, Kind der Nacht.", el:"#nav [data-tab=tree]", until:s=>true, last:true},
 ];

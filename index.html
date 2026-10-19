@@ -24,19 +24,13 @@
   <div id="eventbar" class="hidden"></div>
   <main>
     <section id="tab-hunt" class="tab active">
-      <div id="sky">
-        <div id="moon"></div><div class="stars"></div>
+      <div id="mapWrap">
+        <canvas id="map"></canvas>
         <div id="chapter" class="chapter"></div>
-        <div class="roof">
-          <svg class="castle" viewBox="0 0 390 170" preserveAspectRatio="xMidYMax meet"><path d="M0 170V120L40 120V80L30 80L55 40L80 80L70 80V120H110V60L100 60L135 10L170 60L160 60V100H230V60L220 60L255 10L290 60L280 60V120H320V80L310 80L335 40L360 80L350 80V120H390V170Z" fill="#3a2a5c" stroke="#1a0f2e" stroke-width="4"/><g fill="#ffd166"><rect x="125" y="70" width="18" height="24" rx="9"/><rect x="245" y="70" width="18" height="24" rx="9"/><rect x="48" y="92" width="14" height="18" rx="7"/><rect x="328" y="92" width="14" height="18" rx="7"/></g></svg>
-          <button id="bite" aria-label="Beißen"><span>🩸</span></button>
-        </div>
-        <p id="clickinfo" class="center"></p>
-        <div class="row gap"><button class="btn gold" id="dailyBtn">🎁 Täglich</button><button class="btn" id="storyBtn">📜 Chronik</button></div>
+        <div class="mapbtns"><button class="btn gold" id="dailyBtn">🎁</button><button class="btn" id="storyBtn">📜</button><button class="btn" id="homeBtn">🏰</button></div>
+        <div id="biteWrap"><button id="bite" aria-label="Beißen"><span>🩸</span></button><p id="clickinfo"></p></div>
       </div>
-      <div class="seg"><button data-buy="1" class="on">x1</button><button data-buy="10">x10</button><button data-buy="100">x100</button><button data-buy="max">Max</button></div>
-      <div id="mansionWrap"><div id="mansion"></div><div id="shaft"><div id="cabin">🩸</div></div></div>
-      <div id="cellar"><div class="barrels">🛢️🛢️🛢️</div><div><b>Blutkeller</b><br><span id="cellarAmt">0</span></div><div class="barrels">🛢️🛢️</div></div>
+      <div id="plotPanel" class="hidden"></div>
     </section>
     <section id="tab-clan" class="tab"><h2>Der Clan von Nebelhain</h2><div id="clan"></div></section>
     <section id="tab-tree" class="tab"><h2>Blutpfade</h2><p class="muted">Schalte Knoten frei – jeder Pfad verzweigt sich tiefer in die Finsternis.</p><div id="tree"></div></section>
