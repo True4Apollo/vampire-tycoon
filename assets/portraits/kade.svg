@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><defs><radialGradient id="b" cx=".5" cy=".35" r=".8"><stop offset="0" stop-color="#1c2228"/><stop offset="1" stop-color="#040506"/></radialGradient><radialGradient id="f" cx=".45" cy=".4" r=".7"><stop offset="0" stop-color="#c79a78"/><stop offset="1" stop-color="#6b5a58"/></radialGradient><filter id="g" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4" result="x"/><feMerge><feMergeNode in="x"/><feMergeNode in="SourceGraphic"/></feMerge></filter><linearGradient id="v" x1="0" y1="0" x2="0" y2="1"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".85"/></linearGradient></defs>
+<rect width="400" height="400" fill="url(#b)"/><circle cx="80" cy="80" r="46" fill="#f2efe4"/><path d="M40 330 l8 -26 l6 10 l10 -4 l6 -18 l6 14 q16 4 18 24Z" fill="#0b0e12"/><path d="M300 400 L320 270 L340 400Z" fill="#0a0d10"/><path d="M340 400 L360 250 L380 400Z" fill="#0a0d10"/><path d="M-10 400 L10 290 L30 400Z" fill="#0a0d10"/>
+<path d="M60 400 Q70 300 150 285 L196 330 L246 285 Q330 300 340 400Z" fill="#4a1d1d"/><path d="M150 285 L196 360 L170 300Z M246 285 L196 360 L222 300Z" fill="#ffb020" opacity=".55"/>
+<rect x="174" y="240" width="44" height="56" fill="url(#f)"/>
+<ellipse cx="196" cy="180" rx="72" ry="92" fill="url(#f)"/>
+<path d="M114 160 Q100 80 170 64 Q240 52 276 110 Q290 140 278 170 L266 128 L250 140 L240 112 L222 128 L206 104 L190 126 L172 106 L158 130 L140 116 L130 150Z" fill="#1a1410"/>
+<path d="M150 170 q18 -8 34 0 M210 170 q18 -8 34 0" stroke="#2a1a1a" stroke-width="4" fill="none"/>
+<ellipse cx="167" cy="186" rx="11" ry="6" fill="#ffb020" filter="url(#g)"/><ellipse cx="227" cy="186" rx="11" ry="6" fill="#ffb020" filter="url(#g)"/>
+<circle cx="167" cy="186" r="2.5" fill="#000"/><circle cx="227" cy="186" r="2.5" fill="#000"/>
+<path d="M196 196 l-6 30 h12" stroke="#7a6060" stroke-width="2.5" fill="none"/>
+<path d="M176 244 q20 10 40 0" stroke="#7a1a22" stroke-width="5" fill="none" stroke-linecap="round"/>
+<rect width="400" height="400" fill="url(#v)"/></svg>

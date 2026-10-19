@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><defs><radialGradient id="b" cx=".5" cy=".35" r=".8"><stop offset="0" stop-color="#1b2433"/><stop offset="1" stop-color="#05070c"/></radialGradient><radialGradient id="f" cx=".45" cy=".4" r=".7"><stop offset="0" stop-color="#e8e2dc"/><stop offset="1" stop-color="#6b5a58"/></radialGradient><filter id="g" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4" result="x"/><feMerge><feMergeNode in="x"/><feMergeNode in="SourceGraphic"/></feMerge></filter><linearGradient id="v" x1="0" y1="0" x2="0" y2="1"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".85"/></linearGradient></defs>
+<rect width="400" height="400" fill="url(#b)"/><circle cx="80" cy="80" r="44" fill="#e9eef5" opacity=".9"/><circle cx="66" cy="70" r="8" fill="#c9d0da"/><circle cx="92" cy="96" r="6" fill="#c9d0da"/><path d="M0 400 L22 290 L44 400Z" fill="#0b1018"/><path d="M30 400 L52 260 L74 400Z" fill="#0b1018"/><path d="M300 400 L322 270 L344 400Z" fill="#0b1018"/><path d="M340 400 L362 300 L384 400Z" fill="#0b1018"/>
+<path d="M60 400 Q70 300 150 285 L196 330 L246 285 Q330 300 340 400Z" fill="#0d0d10"/><path d="M150 285 L196 360 L170 300Z M246 285 L196 360 L222 300Z" fill="#7a0010" opacity=".55"/>
+<rect x="174" y="240" width="44" height="56" fill="url(#f)"/>
+<ellipse cx="196" cy="180" rx="72" ry="92" fill="url(#f)"/>
+<path d="M118 132 Q120 70 192 62 Q262 66 270 130 Q258 100 222 96 Q190 92 150 104 Q128 112 118 150Z" fill="#14110f"/>
+<path d="M150 170 q18 -8 34 0 M210 170 q18 -8 34 0" stroke="#2a1a1a" stroke-width="4" fill="none"/>
+<ellipse cx="167" cy="186" rx="11" ry="6" fill="#ff2a2a" filter="url(#g)"/><ellipse cx="227" cy="186" rx="11" ry="6" fill="#ff2a2a" filter="url(#g)"/>
+<circle cx="167" cy="186" r="2.5" fill="#000"/><circle cx="227" cy="186" r="2.5" fill="#000"/>
+<path d="M196 196 l-6 30 h12" stroke="#7a6060" stroke-width="2.5" fill="none"/>
+<path d="M176 244 q20 10 40 0" stroke="#7a1a22" stroke-width="5" fill="none" stroke-linecap="round"/>
+<rect width="400" height="400" fill="url(#v)"/></svg>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0a0208">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Vampire Tycoon – Baue dein Blut-Imperium in Nebelhain.">
+<title>Vampire Tycoon – Blut von Nebelhain</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="fx"></canvas>
+<div id="app">
+  <header id="top">
+    <div class="res"><span class="drop">🩸</span><div><b id="blood">0</b><small id="bps">0 /s</small></div></div>
+    <div id="cycle" class="cycle"></div>
+    <div class="res souls"><span>👻</span><b id="souls">0</b></div>
+  </header>
+  <div id="eventbar" class="hidden"></div>
+  <main>
+    <section id="tab-hunt" class="tab active">
+      <div id="sky">
+        <div id="moon"></div><div class="stars"></div>
+        <div id="chapter" class="chapter"></div>
+        <div class="roof">
+          <svg class="castle" viewBox="0 0 390 170" preserveAspectRatio="xMidYMax meet"><path d="M0 170V120L40 120V80L30 80L55 40L80 80L70 80V120H110V60L100 60L135 10L170 60L160 60V100H230V60L220 60L255 10L290 60L280 60V120H320V80L310 80L335 40L360 80L350 80V120H390V170Z" fill="#3a2a5c" stroke="#1a0f2e" stroke-width="4"/><g fill="#ffd166"><rect x="125" y="70" width="18" height="24" rx="9"/><rect x="245" y="70" width="18" height="24" rx="9"/><rect x="48" y="92" width="14" height="18" rx="7"/><rect x="328" y="92" width="14" height="18" rx="7"/></g></svg>
+          <button id="bite" aria-label="Beißen"><span>🩸</span></button>
+        </div>
+        <p id="clickinfo" class="center"></p>
+        <div class="row gap"><button class="btn gold" id="dailyBtn">🎁 Täglich</button><button class="btn" id="storyBtn">📜 Chronik</button></div>
+      </div>
+      <div class="seg"><button data-buy="1" class="on">x1</button><button data-buy="10">x10</button><button data-buy="100">x100</button><button data-buy="max">Max</button></div>
+      <div id="mansionWrap"><div id="mansion"></div><div id="shaft"><div id="cabin">🩸</div></div></div>
+      <div id="cellar"><div class="barrels">🛢️🛢️🛢️</div><div><b>Blutkeller</b><br><span id="cellarAmt">0</span></div><div class="barrels">🛢️🛢️</div></div>
+    </section>
+    <section id="tab-clan" class="tab"><h2>Der Clan von Nebelhain</h2><div id="clan"></div></section>
+    <section id="tab-tree" class="tab"><h2>Blutpfade</h2><p class="muted">Schalte Knoten frei – jeder Pfad verzweigt sich tiefer in die Finsternis.</p><div id="tree"></div></section>
+    <section id="tab-more" class="tab">
+      <div class="card"><h2>⚱️ Unsterblichkeit</h2><p class="muted">Opfere dein Imperium, um als Unsterblicher wiederzukehren. Jede Seele: <b>+10 %</b> Produktion für immer. Clan, Erfolge und Chronik bleiben erhalten.</p><p id="soulinfo"></p><button class="btn blood" id="prestige">Ritual beginnen</button></div>
+      <div class="card"><h2>🏆 Erfolge <small id="achCount"></small></h2><div id="ach" class="achgrid"></div></div>
+      <div class="card"><h2>📊 Statistik</h2><div id="stats" class="stats"></div></div>
+      <div class="card"><h2>⚙️ Einstellungen</h2>
+        <label class="tog"><input type="checkbox" id="optSound" checked> Sound</label>
+        <label class="tog"><input type="checkbox" id="optHaptic" checked> Vibration</label>
+        <label class="tog"><input type="checkbox" id="optFx" checked> Partikel</label>
+        <div class="row gap wrap"><button class="btn" id="saveBtn">💾 Speichern</button><button class="btn" id="exportBtn">📤 Export</button><button class="btn" id="importBtn">📥 Import</button><button class="btn danger" id="resetBtn">🗑️ Alles löschen</button></div>
+        <p class="muted small">Vampire Tycoon v2.0 · Alle Figuren und Orte sind frei erfunden.</p>
+      </div>
+    </section>
+  </main>
+  <nav id="nav">
+    <button data-tab="hunt" class="on"><i>🏰</i>Anwesen</button>
+    <button data-tab="clan"><i>🧛</i>Clan<em id="clanDot" class="dot hidden"></em></button>
+    <button data-tab="tree"><i>🌿</i>Pfade<em id="treeDot" class="dot hidden"></em></button>
+    <button data-tab="more"><i>⚱️</i>Mehr<em id="moreDot" class="dot hidden"></em></button>
+  </nav>
+</div>
+<div id="modal" class="modal hidden"><div class="mbox"><div id="mbody"></div></div></div>
+<div id="toasts"></div>
+<div id="tut" class="hidden"><div class="tutbox"><p id="tutText"></p><button class="btn gold" id="tutNext">Weiter</button></div></div>
+<button id="golden" class="hidden" aria-label="Seltene Beute">🦇</button>
+<script src="js/art.js"></script>
+<script src="js/data.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+{"name":"vampire-tycoon","version":"2.0.0","private":true,"description":"Vampire Tycoon – Idle-Spiel (PWA, Capacitor-ready)",
+"scripts":{"serve":"npx http-server . -p 8080 -c-1","build":"node scripts/build.js","cap:add:ios":"npx cap add ios","cap:sync":"npm run build && npx cap sync","cap:open:ios":"npx cap open ios"},
+"devDependencies":{"@capacitor/cli":"^6.0.0"},"dependencies":{"@capacitor/core":"^6.0.0","@capacitor/ios":"^6.0.0","@capacitor/haptics":"^6.0.0"}}
